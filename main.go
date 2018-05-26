@@ -21,5 +21,5 @@ func main() {
 	_ = server.New(e)
 
 	// Start server
-	e.Logger.Fatal(e.Start(":8888"))
+	e.Logger.Fatal(e.Start(":8080"))
 }
