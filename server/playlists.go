@@ -158,8 +158,15 @@ func (s *Server) getRecommendations(authorization string, generationInfo *Genera
     req.Header.Set("Authorization", authorization)
     query := req.URL.Query()
     query.Add("seed_tracks", generationInfo.Tracks)
-    if generationInfo.Artists != "" {
-        query.Add("seed_artists", generationInfo.Artists)
+    numberTracks := len(generationInfo.Tracks)
+    numberArtists := len(generationInfo.Artists)
+    maxArtists := 5 - numberTracks
+    if generationInfo.Artists != "" && numberTracks < 5 {
+        if (numberArtists < maxArtists) {
+            query.Add("seed_artists", generationInfo.Artists[0:numberArtists])
+        } else {
+            query.Add("seed_artists", generationInfo.Artists[0:maxArtists])
+        }
     }
     // Add optional query parameters
     if generationInfo.Limit != nil {
