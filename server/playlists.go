@@ -90,7 +90,7 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
         return c.JSON(http.StatusBadRequest, Error{"Could not add tracks to playlist"})
     }
 
-    return c.JSON(http.StatusOK, Message{"Sucessfully created playlist"})
+    return c.JSON(http.StatusOK, Message{"Successfully created playlist"})
 }
 
 func (s *Server) createPlaylist(authorization string, createPlaylistRequest *CreatePlaylistRequest,
