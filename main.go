@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/labstack/gommon/log"
 )
 
 func main() {
@@ -15,6 +16,7 @@ func main() {
 	// User middleware for logging
 	e.Use(middleware.Logger())
 	e.Logger.SetOutput(os.Stdout)
+	e.Logger.SetLevel(log.DEBUG)
 
 	_ = server.New(e)
 
