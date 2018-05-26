@@ -25,7 +25,7 @@ func New(e *echo.Echo) (s *Server) {
 
     // Routes
 	e.GET("/status", s.health)
-    e.POST("/tracks", s.searchTracks)
+    e.GET("/tracks", s.searchTracks)
 	e.POST("/playlists", s.generatePlaylist)
 
     return

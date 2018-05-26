@@ -9,10 +9,6 @@ import (
     "github.com/labstack/echo"
 )
 
-type TracksRequest struct {
-    Token    string `json:"token"`
-}
-
 type TracksResponse struct {
     Tracks   []Track `json:"tracks"`
 }
@@ -44,8 +40,11 @@ type SearchResponse struct {
 }
 
 func (s *Server) searchTracks(c echo.Context) (err error) {
-    tracksRequest := new(TracksRequest)
-    if err = c.Bind(tracksRequest); err != nil {
+    // We need to be passed the user's access token through the Authorization header
+    authorization := c.Request().Header.Get("Authorization")
+    if authorization == "" {
+        s.e.Logger.Error("No authorization provided, could not search tracks")
+        err = errors.New("No authorization provided")
         return
     }
 
@@ -55,7 +54,7 @@ func (s *Server) searchTracks(c echo.Context) (err error) {
     // Generate request url
     searchUrl := "https://api.spotify.com/v1/search"
     req, _ := http.NewRequest("GET", searchUrl, nil)
-    req.Header.Set("Authorization", "Bearer " + tracksRequest.Token)
+    req.Header.Set("Authorization", authorization)
     req.URL.RawQuery = c.QueryString()
     s.e.Logger.Debug(req.URL.String())
     res, err := client.Do(req)

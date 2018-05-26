@@ -13,7 +13,6 @@ import (
 
 type GenerationInfo struct {
     User        string `json:"user"`
-    Token       string `json:"token"`
     Name        string `json:"name"`
     Description string `json:"description"`
     Tracks      string `json:"tracks"`
@@ -45,6 +44,14 @@ type AddTracksRequest struct {
 }
 
 func (s *Server) generatePlaylist(c echo.Context) (err error) {
+    // We need to be passed the user's access token through the Authorization header
+    authorization := c.Request().Header.Get("Authorization")
+    if authorization == "" {
+        s.e.Logger.Error("No authorization provided, could not generate playlist")
+        err = errors.New("No authorization provided")
+        return
+    }
+
     // Get details from POST request
     // NOTE: The user must have logged in and given our app the
     // permissions it needs
@@ -58,7 +65,7 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
     client := &http.Client{}
 
     // Get track recommendations
-    recommendationsResponse, err := s.getRecommendations(generationInfo, client)
+    recommendationsResponse, err := s.getRecommendations(authorization, generationInfo, client)
     if err != nil {
         return c.JSON(http.StatusBadRequest, Error{"Could not get recommendations"})
     }
@@ -68,7 +75,7 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
     createPlaylistRequest.Name = generationInfo.Name;
     createPlaylistRequest.Description = generationInfo.Description;
 
-    createPlaylistResponse, err := s.createPlaylist(createPlaylistRequest, generationInfo, client)
+    createPlaylistResponse, err := s.createPlaylist(authorization, createPlaylistRequest, generationInfo, client)
     if err != nil {
         return c.JSON(http.StatusBadRequest, Error{"Could not create playlist"})
     }
@@ -79,14 +86,14 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
         addTracksRequest.Uris = append(addTracksRequest.Uris, track.Uri)
     }
 
-    if err = s.addTracksToPlaylist(createPlaylistResponse.PlaylistId, addTracksRequest, generationInfo, client); err != nil {
+    if err = s.addTracksToPlaylist(authorization, createPlaylistResponse.PlaylistId, addTracksRequest, generationInfo, client); err != nil {
         return c.JSON(http.StatusBadRequest, Error{"Could not add tracks to playlist"})
     }
 
     return c.JSON(http.StatusOK, Message{"Sucessfully created playlist"})
 }
 
-func (s *Server) createPlaylist(createPlaylistRequest *CreatePlaylistRequest,
+func (s *Server) createPlaylist(authorization string, createPlaylistRequest *CreatePlaylistRequest,
     generationInfo *GenerationInfo, client *http.Client) (createPlaylistResponse *CreatePlaylistResponse, err error) {
     // POST to Spotify's playlists endpoint to create playlist
     s.e.Logger.Debug("Creating Spotify playlist")
@@ -99,7 +106,7 @@ func (s *Server) createPlaylist(createPlaylistRequest *CreatePlaylistRequest,
         return
     }
     req, _ := http.NewRequest("POST", createPlaylistUrl, bytes.NewBuffer(b))
-    req.Header.Set("Authorization", "Bearer " + generationInfo.Token)
+    req.Header.Set("Authorization", authorization)
     req.Header.Set("Content-Type", "application/json")
     s.e.Logger.Debug(req.URL.String())
     res, err := client.Do(req)
@@ -128,7 +135,7 @@ func (s *Server) createPlaylist(createPlaylistRequest *CreatePlaylistRequest,
     return
 }
 
-func (s *Server) getRecommendations(generationInfo *GenerationInfo,
+func (s *Server) getRecommendations(authorization string, generationInfo *GenerationInfo,
     client *http.Client) (recommendationsResponse *RecommendationsResponse, err error) {
     // GET recommendations from Spotify recommendations endpoint
     s.e.Logger.Debug("Getting Spotify track recommendations")
@@ -136,7 +143,7 @@ func (s *Server) getRecommendations(generationInfo *GenerationInfo,
     // Generate request url
     recommendationsUrl := "https://api.spotify.com/v1/recommendations"
     req, _ := http.NewRequest("GET", recommendationsUrl, nil)
-    req.Header.Set("Authorization", "Bearer " + generationInfo.Token)
+    req.Header.Set("Authorization", authorization)
     query := req.URL.Query()
     query.Add("limit", strconv.Itoa(generationInfo.Limit))
     query.Add("seed_tracks", generationInfo.Tracks)
@@ -171,7 +178,7 @@ func (s *Server) getRecommendations(generationInfo *GenerationInfo,
     return
 }
 
-func (s *Server) addTracksToPlaylist(playlistId string, addTracksRequest *AddTracksRequest,
+func (s *Server) addTracksToPlaylist(authorization string, playlistId string, addTracksRequest *AddTracksRequest,
     generationInfo *GenerationInfo, client *http.Client) (err error) {
     // POST to Spotify's playlists endpoint (for the specific playlist) to add tracks
     s.e.Logger.Debug("Adding tracks to Spotify playlist")
@@ -184,7 +191,7 @@ func (s *Server) addTracksToPlaylist(playlistId string, addTracksRequest *AddTra
         return
     }
     req, _ := http.NewRequest("POST", addTracksUrl, bytes.NewBuffer(b))
-    req.Header.Set("Authorization", "Bearer " + generationInfo.Token)
+    req.Header.Set("Authorization", authorization)
     req.Header.Set("Content-Type", "application/json")
     s.e.Logger.Debug(req.URL.String())
     res, err := client.Do(req)

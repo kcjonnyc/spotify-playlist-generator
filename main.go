@@ -22,7 +22,7 @@ func main() {
 	// Allows requests from "http://localhost:3000" origin with POST method
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"http://localhost:3000"},
-		AllowMethods: []string{echo.POST},
+		AllowMethods: []string{echo.GET, echo.POST},
 	}))
 
 	_ = server.New(e)
