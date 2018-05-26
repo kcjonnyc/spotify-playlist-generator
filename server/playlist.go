@@ -3,6 +3,7 @@ package server
 import (
     "bytes"
     "encoding/json"
+    "errors"
     "io/ioutil"
     "net/http"
     "strconv"
@@ -33,15 +34,15 @@ type CreatePlaylistResponse struct {
 
 type RecommendationsResponse struct {
     Tracks []struct {
-        Id   string `json:"id"`
         Name string `json:"name"`
+        Uri  string `json:"uri"`
     } `json:"tracks"`
 }
 
-/*
-type AddSongsRequest struct {
 
-}*/
+type AddTracksRequest struct {
+    Uris []string `json:"uris"`
+}
 
 func (s *Server) generatePlaylist(c echo.Context) (err error) {
     // Get details from POST request
@@ -56,11 +57,11 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
     // Create http client
     client := &http.Client{}
 
+    // Get track recommendations
     recommendationsResponse, err := s.getRecommendations(generationInfo, client)
     if err != nil {
         return c.JSON(http.StatusBadRequest, Error{"Could not get recommendations"})
     }
-    return c.JSON(http.StatusOK, recommendationsResponse)
 
     // Generate playlist creation request
     createPlaylistRequest := new(CreatePlaylistRequest)
@@ -71,7 +72,18 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
     if err != nil {
         return c.JSON(http.StatusBadRequest, Error{"Could not create playlist"})
     }
-    return c.JSON(http.StatusOK, createPlaylistResponse)
+
+    // Generate add tracks to playlist request
+    addTracksRequest := new(AddTracksRequest)
+    for _, track := range recommendationsResponse.Tracks {
+        addTracksRequest.Uris = append(addTracksRequest.Uris, track.Uri)
+    }
+
+    if err = s.addTracksToPlaylist(createPlaylistResponse.PlaylistId, addTracksRequest, generationInfo, client); err != nil {
+        return c.JSON(http.StatusBadRequest, Error{"Could not add tracks to playlist"})
+    }
+
+    return c.JSON(http.StatusOK, Message{"Sucessfully created playlist"})
 }
 
 func (s *Server) createPlaylist(createPlaylistRequest *CreatePlaylistRequest,
@@ -98,7 +110,8 @@ func (s *Server) createPlaylist(createPlaylistRequest *CreatePlaylistRequest,
 
     // Check response from playlist creation
     if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
-        s.e.Logger.Error("Bad status code from Spotify API")
+        s.e.Logger.Error("Could not create playlist, status code: " + http.StatusText(res.StatusCode))
+        err = errors.New("Bad status code from Spotify API, could not create playlist")
 		return
 	}
     // Unmarshal response and return
@@ -118,7 +131,7 @@ func (s *Server) createPlaylist(createPlaylistRequest *CreatePlaylistRequest,
 func (s *Server) getRecommendations(generationInfo *GenerationInfo,
     client *http.Client) (recommendationsResponse *RecommendationsResponse, err error) {
     // GET recommendations from Spotify recommendations endpoint
-    s.e.Logger.Debug("Getting Spotify song recommendations")
+    s.e.Logger.Debug("Getting Spotify track recommendations")
 
     // Generate request url
     recommendationsUrl := "https://api.spotify.com/v1/recommendations"
@@ -140,7 +153,8 @@ func (s *Server) getRecommendations(generationInfo *GenerationInfo,
 
     // Check recommendations response
     if res.StatusCode != http.StatusOK {
-        s.e.Logger.Errorf("Bad status code from Spotify API", res.StatusCode)
+        s.e.Logger.Error("Could not get recommendations, status code: " + http.StatusText(res.StatusCode))
+        err = errors.New("Bad status code from Spotify API, could not get recommendations")
 		return
 	}
     // Unmarshal response and return
@@ -154,5 +168,37 @@ func (s *Server) getRecommendations(generationInfo *GenerationInfo,
         s.e.Logger.Errorf("Could not unmarshal recommendations response: ", err)
         return
     }
+    return
+}
+
+func (s *Server) addTracksToPlaylist(playlistId string, addTracksRequest *AddTracksRequest,
+    generationInfo *GenerationInfo, client *http.Client) (err error) {
+    // POST to Spotify's playlists endpoint (for the specific playlist) to add tracks
+    s.e.Logger.Debug("Adding tracks to Spotify playlist")
+
+    // Generate request url
+    addTracksUrl := "https://api.spotify.com/v1/users/" + generationInfo.User + "/playlists/" + playlistId + "/tracks"
+    b, err := json.Marshal(addTracksRequest)
+    if err != nil {
+        s.e.Logger.Errorf("Could not marshal add tracks request: ", err)
+        return
+    }
+    req, _ := http.NewRequest("POST", addTracksUrl, bytes.NewBuffer(b))
+    req.Header.Set("Authorization", "Bearer " + generationInfo.Token)
+    req.Header.Set("Content-Type", "application/json")
+    s.e.Logger.Debug(req.URL.String())
+    res, err := client.Do(req)
+    if err != nil {
+        s.e.Logger.Errorf("Could not POST to playlists endpoint to add tracks: ", err)
+        return
+    }
+
+    // Check response from adding tracks
+    if res.StatusCode != http.StatusCreated {
+        s.e.Logger.Error("Could not add tracks, status code: " + http.StatusText(res.StatusCode))
+        err = errors.New("Bad status code from Spotify API, could not add tracks")
+		return
+	}
+    // We don't care about the response body in this case
     return
 }
