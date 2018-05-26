@@ -1,24 +1,31 @@
 package server
 
 import (
+    "fmt"
     "bytes"
     "encoding/json"
     "errors"
     "io/ioutil"
     "net/http"
-    "strconv"
     "strings"
 
     "github.com/labstack/echo"
 )
 
 type GenerationInfo struct {
-    User        string `json:"user"`
-    Name        string `json:"name"`
-    Description string `json:"description"`
-    Tracks      string `json:"tracks"`
-    Artists     string `json:"artists"`
-    Limit       int    `json:"limit"`
+    User         string   `json:"user"`
+    Name         string   `json:"name"`
+    Description  string   `json:"description"`
+    Tracks       string   `json:"tracks"`
+    Artists      string   `json:"artists"`
+    Limit        *int     `json:"limit,omitempty"`
+    Danceability *float64 `json:"danceability,omitempty"`
+    Energy       *float64 `json:"energy,omitempty"`
+    Liveness     *float64 `json:"liveness,omitempty"`
+    Loudness     *float64 `json:"loudness,omitempty"`
+    Mode         *int     `json:"mode,omitempty"`
+    Popularity   *int     `json:"popularity,omitempty"`
+    Valence      *float64 `json:"valence,omitempty"`
 }
 
 type CreatePlaylistRequest struct {
@@ -150,11 +157,36 @@ func (s *Server) getRecommendations(authorization string, generationInfo *Genera
     req, _ := http.NewRequest("GET", recommendationsUrl, nil)
     req.Header.Set("Authorization", authorization)
     query := req.URL.Query()
-    query.Add("limit", strconv.Itoa(generationInfo.Limit))
     query.Add("seed_tracks", generationInfo.Tracks)
     if generationInfo.Artists != "" {
         query.Add("seed_artists", generationInfo.Artists)
     }
+    // Add optional query parameters
+    if generationInfo.Limit != nil {
+        query.Add("limit", fmt.Sprint(*generationInfo.Limit))
+    }
+    if generationInfo.Danceability != nil {
+        query.Add("target_danceability", fmt.Sprint(*generationInfo.Danceability))
+    }
+    if generationInfo.Energy != nil {
+        query.Add("target_energy", fmt.Sprint(*generationInfo.Energy))
+    }
+    if generationInfo.Liveness != nil {
+        query.Add("target_liveness", fmt.Sprint(*generationInfo.Liveness))
+    }
+    if generationInfo.Loudness != nil {
+        query.Add("target_loudness", fmt.Sprint(*generationInfo.Loudness))
+    }
+    if generationInfo.Mode != nil {
+        query.Add("target_mode", fmt.Sprint(*generationInfo.Mode))
+    }
+    if generationInfo.Popularity != nil {
+        query.Add("target_popularity", fmt.Sprint(*generationInfo.Popularity))
+    }
+    if generationInfo.Valence != nil {
+        query.Add("target_valence", fmt.Sprint(*generationInfo.Valence))
+    }
+
     req.URL.RawQuery = query.Encode()
     s.e.Logger.Debug(req.URL.String())
     res, err := client.Do(req)

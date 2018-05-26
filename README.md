@@ -57,17 +57,26 @@ Sample: /tracks?q=the%201975&type=track&limit=3
 
 ### POST /playlists
 
-The request requires a body
+The request requires a body, a sample is provided below
 ```
 {
-	"user": "kcjonnyc",
-	"name": "generated playlist",
-	"description": "auto-generated playlist",
-	"tracks": "5hc71nKsUgtwQ3z52KEKQk",
-	"artists": "3mIj9lX2MWuHmhNCA7LSCW",
-	"limit": 50
+    "user": "kcjonnyc",
+    "name": "generated playlist",
+    "description": "auto-generated playlist",
+    "tracks": "5hc71nKsUgtwQ3z52KEKQk",
+    "artists": "3mIj9lX2MWuHmhNCA7LSCW",
+    "limit": 50,
+    "danceability": 0.45,
+    "energy": 0.3,
+    "liveness": 0.65,
+    "loudness": 0.85,
+    "mode": 1,
+    "popularity": 65,
+    "valence": 0.45
 }
 ```
-Where, tracks and artists are comma separated lists of Spotify ID's. For more on Spotify ID's visit: https://beta.developer.spotify.com/documentation/web-api/#spotify-uris-and-ids
+Where the user is the username and the name and description are for the Spotify playlist to be created. Tracks and artists are comma separated lists of Spotify ID's. For more on Spotify ID's visit: https://beta.developer.spotify.com/documentation/web-api/#spotify-uris-and-ids
 
-If the operation is successful, the response will the a 200 with message "Successfully created playlist". 
+The remainder of the fields are optional. Note that the limit, mode and popularity are integers while the other are floats. Details on what these attributes represent are documented for Spotify's recommendations endpoint: https://beta.developer.spotify.com/documentation/web-api/reference/browse/get-recommendations/
+
+If the operation is successful, the response will the a 200 with message "Successfully created playlist".
