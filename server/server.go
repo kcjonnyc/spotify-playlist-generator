@@ -25,6 +25,7 @@ func New(e *echo.Echo) (s *Server) {
 
     // Routes
 	e.GET("/status", s.health)
+    e.POST("/tracks", s.searchTracks)
 	e.POST("/playlists", s.generatePlaylist)
 
     return
@@ -32,5 +33,5 @@ func New(e *echo.Echo) (s *Server) {
 
 // Simple health check endpoint
 func (s *Server) health(c echo.Context) error {
-	return c.JSON(http.StatusOK, "Looking good, up and running :)")
+	return c.JSON(http.StatusOK, Message{"Looking good, up and running :)"})
 }
