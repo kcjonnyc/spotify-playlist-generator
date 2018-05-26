@@ -7,6 +7,7 @@ import (
     "io/ioutil"
     "net/http"
     "strconv"
+    "strings"
 
     "github.com/labstack/echo"
 )
@@ -82,6 +83,10 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
 
     // Generate add tracks to playlist request
     addTracksRequest := new(AddTracksRequest)
+    givenTracks := strings.Split(generationInfo.Tracks, ",")
+    for _, track := range givenTracks {
+        addTracksRequest.Uris = append(addTracksRequest.Uris, "spotify:track:" + track)
+    }
     for _, track := range recommendationsResponse.Tracks {
         addTracksRequest.Uris = append(addTracksRequest.Uris, track.Uri)
     }
