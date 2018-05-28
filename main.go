@@ -21,12 +21,12 @@ func main() {
 	// CORS restricted
 	// Allows requests from "http://localhost:3000" origin with POST method
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"http://localhost:3000"},
+		AllowOrigins: []string{"http://localhost:3000,https://playmoji-b7170.firebaseapp.com/"},
 		AllowMethods: []string{echo.GET, echo.POST},
 	}))
 
 	_ = server.New(e)
 
 	// Start server
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.StartTLS(":8080", "cert.pem", "key.pem"))
 }
