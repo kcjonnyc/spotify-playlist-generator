@@ -28,5 +28,5 @@ func main() {
 	_ = server.New(e)
 
 	// Start server
-	e.Logger.Fatal(e.StartTLS(":8080", "cert.pem", "key.pem"))
+	e.Logger.Fatal(e.Start(":8080"))
 }
