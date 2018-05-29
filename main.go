@@ -13,6 +13,12 @@ func main() {
 	// Echo instance
 	e := echo.New()
 
+	port := os.Getenv("PORT")
+  	if port == "" {
+    	e.Logger.Error("$PORT not set, defaulting to 8080")
+		port = "8080"
+  	}
+
 	// User middleware for logging
 	e.Use(middleware.Logger())
 	e.Logger.SetOutput(os.Stdout)
@@ -28,5 +34,5 @@ func main() {
 	_ = server.New(e)
 
 	// Start server
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start(":" + port))
 }
