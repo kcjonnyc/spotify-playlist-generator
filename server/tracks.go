@@ -2,9 +2,10 @@ package server
 
 import (
     "encoding/json"
-    "errors"
     "io/ioutil"
     "net/http"
+
+    "spotify-playlist-generator/errors"
 
     "github.com/labstack/echo"
 )
@@ -44,8 +45,7 @@ func (s *Server) searchTracks(c echo.Context) (err error) {
     authorization := c.Request().Header.Get("Authorization")
     if authorization == "" {
         s.e.Logger.Error("No authorization provided, could not search tracks")
-        err = errors.New("No authorization provided")
-        return
+        return c.JSON(http.StatusBadRequest, Error{errors.ErrNoAuthorizationHeader.Error()})
     }
 
     // Create http client
@@ -66,8 +66,10 @@ func (s *Server) searchTracks(c echo.Context) (err error) {
     // Check search response
     if res.StatusCode != http.StatusOK {
         s.e.Logger.Error("Could not get tracks, status code: " + http.StatusText(res.StatusCode))
-        err = errors.New("Bad status code from Spotify API, could not get tracks")
-		return
+        if res.StatusCode == http.StatusUnauthorized {
+            return c.JSON(res.StatusCode, Error{errors.ErrSpotifyUnauthorized.Error()})
+        }
+		return c.JSON(res.StatusCode, Error{errors.ErrSpotifyBadStatus.Error()})
 	}
     // Unmarshal response and return
     body, err := ioutil.ReadAll(res.Body)

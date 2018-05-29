@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+
 	"spotify-playlist-generator/server"
 
 	"github.com/labstack/echo"

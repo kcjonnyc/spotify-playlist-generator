@@ -4,10 +4,11 @@ import (
     "fmt"
     "bytes"
     "encoding/json"
-    "errors"
     "io/ioutil"
     "net/http"
     "strings"
+
+    "spotify-playlist-generator/errors"
 
     "github.com/labstack/echo"
 )
@@ -56,8 +57,7 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
     authorization := c.Request().Header.Get("Authorization")
     if authorization == "" {
         s.e.Logger.Error("No authorization provided, could not generate playlist")
-        err = errors.New("No authorization provided")
-        return
+        return c.JSON(http.StatusBadRequest, Error{errors.ErrNoAuthorizationHeader.Error()})
     }
 
     // Get details from POST request
@@ -75,6 +75,9 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
     // Get track recommendations
     recommendationsResponse, err := s.getRecommendations(authorization, generationInfo, client)
     if err != nil {
+        if err == errors.ErrSpotifyUnauthorized {
+            return c.JSON(http.StatusUnauthorized, Error{err.Error()})
+        }
         return c.JSON(http.StatusBadRequest, Error{"Could not get recommendations"})
     }
 
@@ -85,6 +88,9 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
 
     createPlaylistResponse, err := s.createPlaylist(authorization, createPlaylistRequest, generationInfo, client)
     if err != nil {
+        if err == errors.ErrSpotifyUnauthorized {
+            return c.JSON(http.StatusUnauthorized, Error{err.Error()})
+        }
         return c.JSON(http.StatusBadRequest, Error{"Could not create playlist"})
     }
 
@@ -99,6 +105,9 @@ func (s *Server) generatePlaylist(c echo.Context) (err error) {
     }
 
     if err = s.addTracksToPlaylist(authorization, createPlaylistResponse.PlaylistId, addTracksRequest, generationInfo, client); err != nil {
+        if err == errors.ErrSpotifyUnauthorized {
+            return c.JSON(http.StatusUnauthorized, Error{err.Error()})
+        }
         return c.JSON(http.StatusBadRequest, Error{"Could not add tracks to playlist"})
     }
 
@@ -130,8 +139,10 @@ func (s *Server) createPlaylist(authorization string, createPlaylistRequest *Cre
     // Check response from playlist creation
     if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
         s.e.Logger.Error("Could not create playlist, status code: " + http.StatusText(res.StatusCode))
-        err = errors.New("Bad status code from Spotify API, could not create playlist")
-		return
+        if res.StatusCode == http.StatusUnauthorized {
+            return nil, errors.ErrSpotifyUnauthorized
+        }
+        return nil, errors.ErrSpotifyBadStatus
 	}
     // Unmarshal response and return
     body, err := ioutil.ReadAll(res.Body)
@@ -205,8 +216,10 @@ func (s *Server) getRecommendations(authorization string, generationInfo *Genera
     // Check recommendations response
     if res.StatusCode != http.StatusOK {
         s.e.Logger.Error("Could not get recommendations, status code: " + http.StatusText(res.StatusCode))
-        err = errors.New("Bad status code from Spotify API, could not get recommendations")
-		return
+        if res.StatusCode == http.StatusUnauthorized {
+            return nil, errors.ErrSpotifyUnauthorized
+        }
+        return nil, errors.ErrSpotifyBadStatus
 	}
     // Unmarshal response and return
     body, err := ioutil.ReadAll(res.Body)
@@ -247,8 +260,10 @@ func (s *Server) addTracksToPlaylist(authorization string, playlistId string, ad
     // Check response from adding tracks
     if res.StatusCode != http.StatusCreated {
         s.e.Logger.Error("Could not add tracks, status code: " + http.StatusText(res.StatusCode))
-        err = errors.New("Bad status code from Spotify API, could not add tracks")
-		return
+        if res.StatusCode == http.StatusUnauthorized {
+            return errors.ErrSpotifyUnauthorized
+        }
+        return errors.ErrSpotifyBadStatus
 	}
     // We don't care about the response body in this case
     return
