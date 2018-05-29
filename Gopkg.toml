@@ -24,6 +24,10 @@
 #   go-tests = true
 #   unused-packages = true
 
+[metadata.heroku]
+  root-package = "spotify-playlist-generator"
+  go-version = "go1.10.2"
+  install = [ "./..." ]
 
 [[constraint]]
   name = "github.com/labstack/echo"
