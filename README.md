@@ -19,6 +19,10 @@ ____________________________________O/_______
 ⇨ http server started on [::]:8080
 ```
 
+## Deployment
+
+Deploying this service to Heroku is simple. Just run `heroku create` followed by `git push heroku master`.
+
 ## Endpoints
 
 All endpoints require an `Authorization` header with `Bearer <access token>`, where the access token is an access token that belongs to the user. This means that you must use the Authorization Code Grant or Implicit Grant to get a token on behalf of the user. We also require the `playlist-modify-public` scope to create and modify playlists.
