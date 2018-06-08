@@ -69,13 +69,13 @@ func (s *Server) searchTracks(c echo.Context) (err error) {
         if res.StatusCode == http.StatusUnauthorized {
             return c.JSON(res.StatusCode, Error{errors.ErrSpotifyUnauthorized.Error()})
         }
-		return c.JSON(res.StatusCode, Error{errors.ErrSpotifyBadStatus.Error()})
+            return c.JSON(res.StatusCode, Error{errors.ErrSpotifyBadStatus.Error()})
 	}
     // Unmarshal response and return
     body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
         s.e.Logger.Errorf("Could not read search response body: ", err)
-		return
+            return
 	}
     searchResponse := new(SearchResponse)
     if err = json.Unmarshal(body, &searchResponse); err != nil {
