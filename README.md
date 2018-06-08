@@ -33,7 +33,7 @@ Notes on access tokens: The API will return a 500 error if the API fails at any 
 
 The request requires query parameters q, type and limit. These parameters match up with the query parameters required for Spotify's search endpoint. q is the query, type a list of types you want to search for (album, artist, playlist, track), limit is the maximum number of results to return.
 
-Sample: /tracks?q=the%201975&type=track&limit=3
+Sample: `/tracks?q=the%201975&type=track&limit=3`
 ```
 {
     "tracks": [
