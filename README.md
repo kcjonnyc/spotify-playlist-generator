@@ -1,6 +1,6 @@
 # Spotify Playlist Generator API
 
-This API serves as a wrapper around Spotify's web API. It provides a simplified search endpoint as well as a playlists endpoint that will create a playlist for a user and add recommended tracks to it.
+This API serves as a wrapper around Spotify's web API. It provides a simplified search endpoint as well as a playlists endpoint that will create a playlist for a user and add recommended tracks to it. An example of it being used can be seen here: https://playmoji-b7170.firebaseapp.com/
 
 ## Getting Started
 
